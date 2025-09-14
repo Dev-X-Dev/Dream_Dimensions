@@ -1,0 +1,3 @@
+/time set night
+/give Player167 minecraft:black_bed
+/gamemode creative
