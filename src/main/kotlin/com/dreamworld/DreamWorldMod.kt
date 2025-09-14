@@ -24,6 +24,10 @@ class DreamWorldMod : ModInitializer {
             RegistryKeys.WORLD,
             Identifier.of(MOD_ID, "dream_world")
         )
+        val STONE_DIMENSION: RegistryKey<World> = RegistryKey.of(
+            RegistryKeys.WORLD,
+            Identifier.of(MOD_ID, "stone_world")
+        )
     }
 
     override fun onInitialize() {
@@ -50,17 +54,27 @@ class DreamWorldMod : ModInitializer {
 
         if (Random.nextFloat() < 0.3f) {
             val server = world.server ?: return
-            val dreamWorld = server.getWorld(DREAM_DIMENSION)
 
-            if (dreamWorld != null) {
-                player.sendMessage(Text.literal("§dYou drift into a strange dream..."), true)
+            // 50/50 chance between dream world and stone world
+            val targetDimension = if (Random.nextBoolean()) DREAM_DIMENSION else STONE_DIMENSION
+            val targetWorld = server.getWorld(targetDimension)
 
-                // Create spawn position in dream world
+            if (targetWorld != null) {
+                // Different messages for different worlds
+                val message = when (targetDimension) {
+                    DREAM_DIMENSION -> "§dYou drift into a strange dream..."
+                    STONE_DIMENSION -> "§7You find yourself in a world of endless stone..."
+                    else -> "§fYou enter a mysterious realm..."
+                }
+
+                player.sendMessage(Text.literal(message), true)
+
+                // Create spawn position
                 val spawnPos = Vec3d(0.5, 65.0, 0.5)
 
-// Create TeleportTarget with proper constructor
+                // Create TeleportTarget with proper constructor
                 val teleportTarget = TeleportTarget(
-                    dreamWorld,         // ServerWorld destination
+                    targetWorld,       // ServerWorld destination
                     spawnPos,          // Vec3d position
                     Vec3d.ZERO,        // Vec3d velocity
                     0.0f,              // float yaw
@@ -70,13 +84,17 @@ class DreamWorldMod : ModInitializer {
                     }
                 )
 
-
                 // Use vanilla teleport method
                 player.teleportTo(teleportTarget)
 
-                println("Player ${player.name.string} teleported to dream world!")
+                val worldName = when (targetDimension) {
+                    DREAM_DIMENSION -> "dream world"
+                    STONE_DIMENSION -> "stone world"
+                    else -> "unknown world"
+                }
+                println("Player ${player.name.string} teleported to $worldName!")
             } else {
-                println("Dream world not found! Make sure your dimension is properly registered.")
+                println("Target world not found! Make sure your dimensions are properly registered.")
             }
         }
     }
