@@ -1,0 +1,20 @@
+{
+  "type": "dreamworld:floating_islands",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "layers": [
+        {
+          "block": "minecraft:barrier",
+          "height": 1
+        }
+      ],
+      "biome": "minecraft:plains",
+      "structures": {
+        "structures": {}
+      },
+      "lakes": false,
+      "features": false
+    }
+  }
+}

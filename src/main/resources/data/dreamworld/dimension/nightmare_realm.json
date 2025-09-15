@@ -1,0 +1,27 @@
+{
+  "type": "dreamworld:nightmare_realm",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "layers": [
+        {
+          "block": "minecraft:bedrock",
+          "height": 1
+        },
+        {
+          "block": "minecraft:netherrack",
+          "height": 20
+        },
+        {
+          "block": "minecraft:blackstone",
+          "height": 5
+        },
+        {
+          "block": "minecraft:soul_sand",
+          "height": 1
+        }
+      ],
+      "biome": "minecraft:soul_sand_valley"
+    }
+  }
+}
