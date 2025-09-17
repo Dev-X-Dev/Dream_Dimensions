@@ -1,12 +1,15 @@
 package com.dreamworld
 
 import net.fabricmc.api.ModInitializer
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.block.BedBlock
 import net.minecraft.block.Blocks
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
+import net.minecraft.server.command.CommandManager
+import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.text.Text
@@ -17,6 +20,10 @@ import net.minecraft.util.math.Vec3d
 import net.minecraft.world.TeleportTarget
 import net.minecraft.world.World
 import kotlin.random.Random
+import com.mojang.brigadier.CommandDispatcher
+import com.mojang.brigadier.arguments.StringArgumentType
+import com.mojang.brigadier.context.CommandContext
+import com.mojang.brigadier.suggestion.SuggestionProvider
 
 class DreamWorldMod : ModInitializer {
     companion object {
@@ -55,10 +62,27 @@ class DreamWorldMod : ModInitializer {
             ENDLESS_OCEAN_DIMENSION,
             NIGHTMARE_REALM_DIMENSION
         )
+
+        // Map for command name to dimension
+        val DIMENSION_NAMES = mapOf(
+            "dream" to DREAM_DIMENSION,
+            "stone" to STONE_DIMENSION,
+            "floating" to FLOATING_ISLANDS_DIMENSION,
+            "mountains" to UPSIDE_DOWN_MOUNTAINS_DIMENSION,
+            "crystal" to CRYSTAL_CAVES_DIMENSION,
+            "ocean" to ENDLESS_OCEAN_DIMENSION,
+            "nightmare" to NIGHTMARE_REALM_DIMENSION
+        )
+
+        // Store player's last overworld position
+        val PLAYER_OVERWORLD_POSITIONS = mutableMapOf<String, Vec3d>()
     }
 
     override fun onInitialize() {
         println("Dream World Mod initialized with ${ALL_DIMENSIONS.size} dream dimensions!")
+
+        // Register commands
+        registerCommands()
 
         UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
             val block = world.getBlockState(hitResult.blockPos).block
@@ -73,6 +97,215 @@ class DreamWorldMod : ModInitializer {
         }
     }
 
+    private fun registerCommands() {
+        CommandRegistrationCallback.EVENT.register { dispatcher, registryAccess, environment ->
+            registerDreamCommands(dispatcher)
+        }
+    }
+
+    private fun registerDreamCommands(dispatcher: CommandDispatcher<ServerCommandSource>) {
+        // Register /dream command with subcommands
+        dispatcher.register(
+            CommandManager.literal("dream")
+                .requires { source -> source.hasPermissionLevel(2) } // OP level 2
+                .then(
+                    CommandManager.literal("enter")
+                        .then(
+                            CommandManager.argument("dimension", StringArgumentType.string())
+                                .suggests(createDimensionSuggestionProvider())
+                                .executes { context ->
+                                    enterDream(context)
+                                }
+                        )
+                        .executes { context ->
+                            enterRandomDream(context)
+                        }
+                )
+                .then(
+                    CommandManager.literal("exit")
+                        .executes { context ->
+                            exitDream(context)
+                        }
+                )
+                .then(
+                    CommandManager.literal("list")
+                        .executes { context ->
+                            listDimensions(context)
+                        }
+                )
+        )
+    }
+
+    private fun createDimensionSuggestionProvider(): SuggestionProvider<ServerCommandSource> {
+        return SuggestionProvider { context, builder ->
+            DIMENSION_NAMES.keys.forEach { name ->
+                builder.suggest(name)
+            }
+            builder.buildFuture()
+        }
+    }
+
+    private fun enterDream(context: CommandContext<ServerCommandSource>): Int {
+        val source = context.source
+        val player = source.playerOrThrow
+        val dimensionName = StringArgumentType.getString(context, "dimension")
+
+        val targetDimension = DIMENSION_NAMES[dimensionName]
+        if (targetDimension == null) {
+            source.sendFeedback(
+                { Text.literal("§cUnknown dimension: $dimensionName. Use /dream list to see available dimensions.") },
+                false
+            )
+            return 0
+        }
+
+        return teleportToDream(source, player, targetDimension, forced = true)
+    }
+
+    private fun enterRandomDream(context: CommandContext<ServerCommandSource>): Int {
+        val source = context.source
+        val player = source.playerOrThrow
+        val randomDimension = ALL_DIMENSIONS.random()
+
+        return teleportToDream(source, player, randomDimension, forced = true)
+    }
+
+    private fun exitDream(context: CommandContext<ServerCommandSource>): Int {
+        val source = context.source
+        val player = source.playerOrThrow
+
+        // Check if player is in a dream dimension
+        if (player.world.registryKey !in ALL_DIMENSIONS) {
+            source.sendFeedback(
+                { Text.literal("§cYou are not in a dream dimension!") },
+                false
+            )
+            return 0
+        }
+
+        val server = source.server
+        val overworld = server.getWorld(World.OVERWORLD)
+
+        if (overworld != null) {
+            // Get stored position or default spawn
+            val playerName = player.name.string
+            val returnPos = PLAYER_OVERWORLD_POSITIONS[playerName] ?: Vec3d(
+                overworld.spawnPos.x.toDouble() + 0.5,
+                overworld.spawnPos.y.toDouble() + 1.0,
+                overworld.spawnPos.z.toDouble() + 0.5
+            )
+
+            val teleportTarget = TeleportTarget(
+                overworld,
+                returnPos,
+                Vec3d.ZERO,
+                0.0f,
+                0.0f,
+                TeleportTarget.PostDimensionTransition {
+                    source.sendFeedback(
+                        { Text.literal("§aYou have awakened from the dream!") },
+                        false
+                    )
+                    // Clear stored position
+                    PLAYER_OVERWORLD_POSITIONS.remove(playerName)
+                }
+            )
+
+            player.teleportTo(teleportTarget)
+            return 1
+        } else {
+            source.sendFeedback(
+                { Text.literal("§cCould not find the overworld!") },
+                false
+            )
+            return 0
+        }
+    }
+
+    private fun listDimensions(context: CommandContext<ServerCommandSource>): Int {
+        val source = context.source
+
+        source.sendFeedback(
+            { Text.literal("§6Available Dream Dimensions:") },
+            false
+        )
+
+        DIMENSION_NAMES.forEach { (name, dimension) ->
+            val displayName = getDimensionName(dimension)
+            source.sendFeedback(
+                { Text.literal("§b- $name §7($displayName)") },
+                false
+            )
+        }
+
+        source.sendFeedback(
+            { Text.literal("§eUsage: §f/dream enter <dimension> §eor §f/dream enter §efor random") },
+            false
+        )
+
+        return 1
+    }
+
+    private fun teleportToDream(source: ServerCommandSource, player: ServerPlayerEntity, targetDimension: RegistryKey<World>, forced: Boolean = false): Int {
+        val server = source.server
+        val targetWorld = server.getWorld(targetDimension)
+
+        if (targetWorld != null) {
+            // Store player's current position if they're in the overworld
+            if (player.world.registryKey == World.OVERWORLD) {
+                PLAYER_OVERWORLD_POSITIONS[player.name.string] = player.pos
+            }
+
+            // Send dimension-specific message
+            val message = getDimensionMessage(targetDimension)
+            val commandMessage = if (forced) "§7[Command] " else ""
+            source.sendFeedback(
+                { Text.literal("$commandMessage$message") },
+                false
+            )
+
+            // Get spawn position for the dimension
+            val spawnPos = getSpawnPosition(targetDimension, targetWorld)
+
+            // Generate initial structures
+            generateInitialStructures(targetWorld, spawnPos, targetDimension)
+
+            // Create TeleportTarget
+            val teleportTarget = TeleportTarget(
+                targetWorld,
+                spawnPos,
+                Vec3d.ZERO,
+                0.0f,
+                0.0f,
+                TeleportTarget.PostDimensionTransition {
+                    // Post-teleportation effects
+                    applyDimensionEffects(player, targetDimension)
+                }
+            )
+
+            // Teleport player
+            player.teleportTo(teleportTarget)
+
+            val worldName = getDimensionName(targetDimension)
+            println("Player ${player.name.string} teleported to $worldName!")
+
+            if (forced) {
+                source.sendFeedback(
+                    { Text.literal("§aTeleported to $worldName!") },
+                    false
+                )
+            }
+
+            return 1
+        } else {
+            source.sendFeedback(
+                { Text.literal("§cTarget world not found! Make sure your dimensions are properly registered.") },
+                false
+            )
+            return 0
+        }
+    }
+
     private fun handleBedUse(player: PlayerEntity, world: World, bedPos: BlockPos) {
         if (world.isClient) return
 
@@ -80,44 +313,15 @@ class DreamWorldMod : ModInitializer {
         if (player !is ServerPlayerEntity) return
 
         if (Random.nextFloat() < 0.3f) {
-            val server = world.server ?: return
+            // Store position before teleporting
+            PLAYER_OVERWORLD_POSITIONS[player.name.string] = player.pos
 
             // Randomly select a dimension
             val targetDimension = ALL_DIMENSIONS.random()
-            val targetWorld = server.getWorld(targetDimension)
 
-            if (targetWorld != null) {
-                // Send dimension-specific message
-                val message = getDimensionMessage(targetDimension)
-                player.sendMessage(Text.literal(message), true)
-
-                // Get spawn position for the dimension
-                val spawnPos = getSpawnPosition(targetDimension, targetWorld)
-
-                // Generate initial structures
-                generateInitialStructures(targetWorld, spawnPos, targetDimension)
-
-                // Create TeleportTarget
-                val teleportTarget = TeleportTarget(
-                    targetWorld,
-                    spawnPos,
-                    Vec3d.ZERO,
-                    0.0f,
-                    0.0f,
-                    TeleportTarget.PostDimensionTransition {
-                        // Post-teleportation effects
-                        applyDimensionEffects(player, targetDimension)
-                    }
-                )
-
-                // Teleport player
-                player.teleportTo(teleportTarget)
-
-                val worldName = getDimensionName(targetDimension)
-                println("Player ${player.name.string} teleported to $worldName!")
-            } else {
-                println("Target world not found! Make sure your dimensions are properly registered.")
-            }
+            // Create a mock command source for teleportToDream
+            val source = player.commandSource
+            teleportToDream(source, player, targetDimension, forced = false)
         }
     }
 
