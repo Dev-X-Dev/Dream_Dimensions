@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:add",
+  "argument1": "dreamworld:crystal_caves/base_3d_noise",
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": {
+      "type": "minecraft:add",
+      "argument1": {
+        "type": "minecraft:noise",
+        "noise": "minecraft:cave",
+        "xz_scale": 1.0,
+        "y_scale": 1.0
+      },
+      "argument2": {
+        "type": "minecraft:noise",
+        "noise": "minecraft:cave_layer",
+        "xz_scale": 0.5,
+        "y_scale": 0.5
+      }
+    },
+    "argument2": 0.8
+  }
+}

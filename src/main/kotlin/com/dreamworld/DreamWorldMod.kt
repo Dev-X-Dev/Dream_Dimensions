@@ -267,8 +267,6 @@ class DreamWorldMod : ModInitializer {
             // Get spawn position for the dimension
             val spawnPos = getSpawnPosition(targetDimension, targetWorld)
 
-            // Generate initial structures
-            generateInitialStructures(targetWorld, spawnPos, targetDimension)
 
             // Create TeleportTarget
             val teleportTarget = TeleportTarget(

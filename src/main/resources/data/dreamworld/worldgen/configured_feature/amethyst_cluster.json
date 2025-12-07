@@ -1,0 +1,48 @@
+{
+  "type": "minecraft:random_patch",
+  "config": {
+    "tries": 32,
+    "xz_spread": 10,
+    "y_spread": 5,
+    "feature": {
+      "feature": {
+        "type": "minecraft:simple_block",
+        "config": {
+          "to_place": {
+            "type": "minecraft:simple_state_provider",
+            "state": {
+              "Name": "minecraft:amethyst_cluster",
+              "Properties": {
+                "facing": "up"
+              }
+            }
+          }
+        }
+      },
+      "placement": [
+        {
+          "type": "minecraft:block_predicate_filter",
+          "predicate": {
+            "type": "minecraft:all_of",
+            "predicates": [
+              {
+                "type": "minecraft:matching_blocks",
+                "blocks": ["minecraft:air"],
+                "offset": [0, 0, 0]
+              },
+              {
+                "type": "minecraft:matching_blocks",
+                "blocks": [
+                  "minecraft:calcite",
+                  "minecraft:deepslate",
+                  "minecraft:amethyst_block"
+                ],
+                "offset": [0, -1, 0]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

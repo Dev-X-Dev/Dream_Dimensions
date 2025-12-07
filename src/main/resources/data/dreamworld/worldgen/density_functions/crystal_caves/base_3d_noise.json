@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:add",
+  "argument1": {
+    "type": "minecraft:mul",
+    "argument1": {
+      "type": "minecraft:y_clamped_gradient",
+      "from_y": -64,
+      "to_y": 320,
+      "from_value": 1.5,
+      "to_value": -1.5
+    },
+    "argument2": 0.3
+  },
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": {
+      "type": "minecraft:noise",
+      "noise": "dreamworld:crystal_caves",
+      "xz_scale": 0.25,
+      "y_scale": 0.25
+    },
+    "argument2": 2.0
+  }
+}

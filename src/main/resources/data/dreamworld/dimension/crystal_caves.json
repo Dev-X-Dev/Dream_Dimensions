@@ -1,27 +1,11 @@
 {
   "type": "dreamworld:crystal_caves",
   "generator": {
-    "type": "minecraft:flat",
-    "settings": {
-      "layers": [
-        {
-          "block": "minecraft:bedrock",
-          "height": 1
-        },
-        {
-          "block": "minecraft:deepslate",
-          "height": 20
-        },
-        {
-          "block": "minecraft:amethyst_block",
-          "height": 3
-        },
-        {
-          "block": "minecraft:calcite",
-          "height": 2
-        }
-      ],
-      "biome": "minecraft:dripstone_caves"
-    }
+    "type": "minecraft:noise",
+    "biome_source": {
+      "type": "minecraft:fixed",
+      "biome": "dreamworld:crystal_caves"
+    },
+    "settings": "dreamworld:crystal_caves"
   }
 }
