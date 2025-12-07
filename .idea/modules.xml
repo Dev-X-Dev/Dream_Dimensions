@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Dream_Dimensions.iml" filepath="$PROJECT_DIR$/.idea/modules/Dream_Dimensions.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Dream_Dimensions.main.iml" filepath="$PROJECT_DIR$/.idea/modules/Dream_Dimensions.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Dream_Dimensions.test.iml" filepath="$PROJECT_DIR$/.idea/modules/Dream_Dimensions.test.iml" />
     </modules>

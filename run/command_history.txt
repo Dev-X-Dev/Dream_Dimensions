@@ -1,3 +1,30 @@
 /time set night
 /give Player167 minecraft:black_bed
 /gamemode creative
+/kill Player487
+/kill Player938
+/dream list
+/dream status
+/dream enter
+/dream exit
+/dream enter
+/dream exit
+/dream enter Player270
+/dream exit
+/kill Player765
+/kill Player593
+/time set night
+/kill Player593
+/time set night
+/kill Player860
+/kill Player694
+/time set night
+/dream exit
+/dream enter floating
+/dream exit
+/dream enter floating
+/dream exit
+/dream enter nightmare
+/dream enter floating
+/time set night
+/kill Player488
